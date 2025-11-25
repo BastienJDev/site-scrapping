@@ -186,8 +186,9 @@ def run_dalloz_script():
     try:
         env = os.environ.copy()
         env['HEADLESS'] = 'false'
+        # Utiliser xvfb-run pour simuler un affichage sur le VPS
         result = subprocess.run(
-            ['node', script_path],
+            ['xvfb-run', '-a', 'node', script_path],
             capture_output=True,
             text=True,
             check=True,
