@@ -1,4 +1,4 @@
-from flask import Flask, render_template, jsonify, request, redirect, url_for, session
+from flask import Flask, render_template, jsonify, request, redirect, url_for, session, send_from_directory
 from flask_cors import CORS
 import requests
 from bs4 import BeautifulSoup
@@ -28,6 +28,8 @@ else:
 
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max
 app.config['UPLOAD_FOLDER'] = 'uploads'
+PDF_FOLDER = os.path.join(app.config['UPLOAD_FOLDER'], 'pdfs')
+os.makedirs(PDF_FOLDER, exist_ok=True)
 
 # Configuration Gemini
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
@@ -48,12 +50,24 @@ USERS = {
 
 # Créer le dossier uploads s'il n'existe pas
 os.makedirs('uploads', exist_ok=True)
+os.makedirs(PDF_FOLDER, exist_ok=True)
 
 DATA_FILE = 'data.json'
-ALLOWED_EXTENSIONS = {'xlsx', 'xls', 'csv'}
+ALLOWED_EXTENSIONS = {'xlsx', 'xls', 'csv', 'pdf'}
+PDF_PROMPTS_FILE = 'pdf_prompts.json'
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def load_pdf_prompts():
+    if not os.path.exists(PDF_PROMPTS_FILE):
+        return {}
+    with open(PDF_PROMPTS_FILE, 'r', encoding='utf-8') as f:
+        return json.load(f)
+
+def save_pdf_prompts(data):
+    with open(PDF_PROMPTS_FILE, 'w', encoding='utf-8') as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
 
 # Fonctions de gestion du fichier JSON
 def load_data():
@@ -174,6 +188,52 @@ def actualites():
 @login_required
 def sites_manager():
     return render_template('sites.html', username=session.get('username'))
+
+@app.route('/bibliotheque')
+@login_required
+def bibliotheque():
+    return render_template('bibliotheque.html', username=session.get('username'))
+
+@app.route('/uploads/<path:filename>')
+def uploaded_file(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
+@app.route('/api/pdfs', methods=['GET', 'POST'])
+@login_required
+def manage_pdfs():
+    if request.method == 'POST':
+        if 'file' not in request.files:
+            return jsonify({'success': False, 'error': 'Aucun fichier envoyé'}), 400
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({'success': False, 'error': 'Nom de fichier vide'}), 400
+        if file and allowed_file(file.filename) and file.filename.lower().endswith('.pdf'):
+            filename = secure_filename(file.filename)
+            filepath = os.path.join(PDF_FOLDER, filename)
+            file.save(filepath)
+            return jsonify({'success': True, 'filename': filename})
+        return jsonify({'success': False, 'error': 'Format non autorisé'}), 400
+    
+    prompts = load_pdf_prompts()
+    files = []
+    for fname in os.listdir(PDF_FOLDER):
+        if fname.lower().endswith('.pdf'):
+            files.append({
+                'name': fname,
+                'url': url_for('uploaded_file', filename=f'pdfs/{fname}'),
+                'prompt': prompts.get(fname, '')
+            })
+    return jsonify({'success': True, 'files': files})
+
+@app.route('/api/pdfs/<path:filename>/prompt', methods=['POST'])
+@login_required
+def update_pdf_prompt(filename):
+    data = request.get_json() or {}
+    prompt = data.get('prompt', '')
+    prompts = load_pdf_prompts()
+    prompts[filename] = prompt
+    save_pdf_prompts(prompts)
+    return jsonify({'success': True, 'prompt': prompt})
 
 @app.route('/run-dalloz-script', methods=['POST'])
 @login_required
