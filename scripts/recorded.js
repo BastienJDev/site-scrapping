@@ -1,4 +1,8 @@
+require('dotenv').config();
 const { chromium } = require('playwright');
+
+const HOST_IP = process.env.HOST_IP || '127.0.0.1';
+const LOGIN_URL = process.env.START_URL || `http://${HOST_IP}:5001/login`;
 
 (async () => {
   const browser = await chromium.launch({
@@ -6,7 +10,7 @@ const { chromium } = require('playwright');
   });
   const context = await browser.newContext();
   const page = await context.newPage();
-  await page.goto('http://127.0.0.1:5001/login');
+  await page.goto(LOGIN_URL);
   await page.getByRole('textbox', { name: 'Nom d\'utilisateur' }).click();
   await page.getByRole('textbox', { name: 'Nom d\'utilisateur' }).fill('https://catalogue-bu.u-bourgogne.fr/discovery/dbsearch?vid=33UB_INST:33UB_INST&lang=fr');
   await page.getByRole('textbox', { name: 'Nom d\'utilisateur' }).press('ControlOrMeta+z');
