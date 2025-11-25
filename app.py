@@ -31,8 +31,14 @@ app.config['UPLOAD_FOLDER'] = 'uploads'
 
 # Configuration Gemini
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
+
 if GEMINI_API_KEY and GEMINI_API_KEY != 'your_api_key_here':
     genai.configure(api_key=GEMINI_API_KEY)
+
+host_ip = os.getenv('HOST_IP')
+
+
+
 
 # Utilisateurs (en production, utilisez une vraie base de données avec mots de passe hashés)
 USERS = {
@@ -670,7 +676,7 @@ def import_excel():
 if __name__ == '__main__':
     # Configuration basée sur l'environnement
     debug_mode = FLASK_ENV != 'production'
-    host = '127.0.0.1' if FLASK_ENV == 'production' else '127.0.0.1'
+    host = host_ip if FLASK_ENV == 'production' else '127.0.0.1'
     port = int(os.getenv('PORT', 5001))
     
     app.run(debug=debug_mode, host=host, port=port)
