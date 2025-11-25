@@ -254,6 +254,29 @@ document.getElementById('importForm').addEventListener('submit', async (e) => {
     }
 });
 
+function setupDallozTrigger() {
+    document.querySelectorAll('[data-dalloz-trigger]').forEach(btn => {
+        if (btn.dataset.bound === 'true') return;
+        btn.dataset.bound = 'true';
+        btn.addEventListener('click', async () => {
+            const original = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = 'Lancement...';
+            try {
+                const res = await fetch('/run-dalloz-script', { method: 'POST' });
+                const data = await res.json();
+                alert(data.success ? (data.message || 'Script lancé') : (data.error || 'Erreur pendant le script'));
+            } catch (err) {
+                alert('Erreur de communication avec le script');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = original;
+            }
+        });
+    });
+}
+
 // Initialisation
+setupDallozTrigger();
 loadCategories();
 loadSites();

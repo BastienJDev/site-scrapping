@@ -5,6 +5,7 @@ from bs4 import BeautifulSoup
 import json
 from datetime import datetime
 import os
+import subprocess
 import pandas as pd
 from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
@@ -13,10 +14,20 @@ import google.generativeai as genai
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app)
+
+# Configuration en fonction de l'environnement
+FLASK_ENV = os.getenv('FLASK_ENV', 'development')
+
+if FLASK_ENV == 'production':
+    # En production, pas de CORS pour plus de sécurité
+    app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', os.urandom(32).hex())
+else:
+    # En développement, activer CORS
+    CORS(app)
+    app.config['SECRET_KEY'] = 'dev-secret-key-change-in-production'
+
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max
 app.config['UPLOAD_FOLDER'] = 'uploads'
-app.config['SECRET_KEY'] = 'votre_cle_secrete_a_changer_en_production'
 
 # Configuration Gemini
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
@@ -157,6 +168,41 @@ def actualites():
 @login_required
 def sites_manager():
     return render_template('sites.html', username=session.get('username'))
+
+@app.route('/run-dalloz-script', methods=['POST'])
+@login_required
+def run_dalloz_script():
+    script_path = os.path.join(os.path.dirname(__file__), 'scripts', 'recorded.js')
+    
+    if not os.path.exists(script_path):
+        return jsonify({'success': False, 'error': 'Script introuvable'}), 404
+    
+    try:
+        env = os.environ.copy()
+        env['HEADLESS'] = 'false'
+        result = subprocess.run(
+            ['node', script_path],
+            capture_output=True,
+            text=True,
+            check=True,
+            timeout=180,
+            env=env
+        )
+        return jsonify({
+            'success': True,
+            'message': 'Script Dalloz exécuté',
+            'output': result.stdout.strip()
+        })
+    except subprocess.TimeoutExpired:
+        return jsonify({'success': False, 'error': 'Timeout lors de l’exécution du script'}), 504
+    except subprocess.CalledProcessError as e:
+        return jsonify({
+            'success': False,
+            'error': 'Erreur pendant l’exécution du script',
+            'details': e.stderr
+        }), 500
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 # ===== CATEGORIES =====
 
@@ -622,4 +668,9 @@ def import_excel():
         return jsonify({'error': f'Failed to process file: {str(e)}'}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True, host='127.0.0.1', port=5001)
+    # Configuration basée sur l'environnement
+    debug_mode = FLASK_ENV != 'production'
+    host = '127.0.0.1' if FLASK_ENV == 'production' else '127.0.0.1'
+    port = int(os.getenv('PORT', 5001))
+    
+    app.run(debug=debug_mode, host=host, port=port)

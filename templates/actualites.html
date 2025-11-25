@@ -41,13 +41,19 @@
                     <span>Offres d'emploi</span>
                 </a>
                 
-                <a href="#" class="nav-item">
-                    <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
-                        <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
-                    </svg>
-                    <span>Sites juridiques</span>
-                </a>
+                <div class="nav-item nav-dropdown">
+                    <div class="nav-dropdown-toggle">
+                        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
+                            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+                        </svg>
+                        <span>Sites juridiques</span>
+                        <span class="nav-caret">▾</span>
+                    </div>
+                    <div class="nav-dropdown-menu">
+                        <button type="button" class="nav-subitem" data-dalloz-trigger>Dalloz</button>
+                    </div>
+                </div>
                 
                 <a href="#" class="nav-item">
                     <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -190,7 +196,12 @@
                         </div>
                         
                         <div id="categorySelection" class="category-list" style="display: none;">
-                            <h3>Sélectionner les catégories</h3>
+                            <div class="selection-title">
+                                <h3>Sélectionner les catégories</h3>
+                                <button type="button" class="btn-tertiary" id="checkAllCategories">
+                                    Tout cocher
+                                </button>
+                            </div>
                             <div id="categoriesCheckboxList" class="checkbox-list checkbox-list-visible">
                                 <!-- Categories will be inserted here -->
                             </div>
@@ -372,6 +383,10 @@
         }
         
         updateSearchCounter(0, sites.length);
+        
+        document.getElementById('checkAllCategories').addEventListener('click', () => {
+            document.querySelectorAll('.category-checkbox').forEach(cb => cb.checked = true);
+        });
         
         function resetForm() {
             document.getElementById('userPrompt').value = '';
@@ -684,6 +699,29 @@
             }
         }
         
+        function setupDallozTrigger() {
+            document.querySelectorAll('[data-dalloz-trigger]').forEach(btn => {
+                if (btn.dataset.bound === 'true') return;
+                btn.dataset.bound = 'true';
+                btn.addEventListener('click', async () => {
+                    const original = btn.textContent;
+                    btn.disabled = true;
+                    btn.textContent = 'Lancement...';
+                    try {
+                        const res = await fetch('/run-dalloz-script', { method: 'POST' });
+                        const data = await res.json();
+                        alert(data.success ? (data.message || 'Script lancé') : (data.error || 'Erreur pendant le script'));
+                    } catch (err) {
+                        alert('Erreur de communication avec le script');
+                    } finally {
+                        btn.disabled = false;
+                        btn.textContent = original;
+                    }
+                });
+            });
+        }
+        
+        setupDallozTrigger();
         loadStats();
     </script>
 </body>

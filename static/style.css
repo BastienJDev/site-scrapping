@@ -100,6 +100,49 @@ body {
     flex-shrink: 0;
 }
 
+.nav-dropdown {
+    flex-direction: column;
+    padding: 0;
+}
+
+.nav-dropdown-toggle {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: 15px 25px;
+    color: rgba(255, 255, 255, 0.7);
+    cursor: pointer;
+}
+
+.nav-dropdown-menu {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    padding: 0 25px 10px 55px;
+    gap: 8px;
+}
+
+.nav-subitem {
+    background: rgba(255, 255, 255, 0.08);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 12px;
+    text-align: left;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.nav-subitem:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.nav-caret {
+    margin-left: auto;
+    font-size: 12px;
+}
+
 /* User Section */
 .user-section {
     padding: 20px;
@@ -601,6 +644,18 @@ body {
     margin-bottom: 30px;
 }
 
+.selection-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.selection-title h3 {
+    margin: 0;
+}
+
 .site-list h3, .category-list h3, .options-section h3 {
     font-size: 18px;
     font-weight: 700;
@@ -927,6 +982,22 @@ body {
 .btn-secondary:hover {
     border-color: #d1d5db;
     background: #f9fafb;
+}
+
+.btn-tertiary {
+    padding: 8px 14px;
+    background: #f3f4f6;
+    color: #1a1554;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-tertiary:hover {
+    background: #e5e7eb;
 }
 
 .btn-launch {
