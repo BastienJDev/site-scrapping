@@ -13,9 +13,7 @@ ENV/
 instance/
 .webassets-cache
 
-# Environment
-.env
-.env.local
+
 
 # IDE
 .vscode/
@@ -35,8 +33,6 @@ Thumbs.db
 *.sqlite
 *.sqlite3
 
-# Data
-data.json
 
 # Uploads
 uploads/
