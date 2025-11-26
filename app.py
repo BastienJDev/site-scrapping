@@ -256,7 +256,8 @@ def run_dalloz_script():
     
     try:
         env = os.environ.copy()
-        env['HEADLESS'] = 'false'
+        # Si xvfb n'est pas disponible, basculer en headless pour éviter l'échec
+        env['HEADLESS'] = 'false' if shutil.which('xvfb-run') else 'true'
         xvfb = shutil.which('xvfb-run')
         cmd = ['node', script_path] if not xvfb else [xvfb, '-a', 'node', script_path]
         result = subprocess.run(
