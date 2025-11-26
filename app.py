@@ -9,6 +9,16 @@ import subprocess
 import pandas as pd
 from werkzeug.utils import secure_filename
 from dotenv import load_dotenv
+import importlib.metadata as importlib_metadata
+
+# Patch importlib.metadata pour ajouter packages_distributions sur Python < 3.10
+try:
+    if not hasattr(importlib_metadata, "packages_distributions"):
+        from importlib_metadata import packages_distributions as _backport_packages_distributions  # type: ignore
+        importlib_metadata.packages_distributions = _backport_packages_distributions  # type: ignore
+except Exception:
+    pass
+
 import google.generativeai as genai
 
 load_dotenv()
