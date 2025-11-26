@@ -8,6 +8,7 @@ import os
 import subprocess
 import pandas as pd
 from werkzeug.utils import secure_filename
+import shutil
 from dotenv import load_dotenv
 import importlib.metadata as importlib_metadata
 
@@ -256,9 +257,10 @@ def run_dalloz_script():
     try:
         env = os.environ.copy()
         env['HEADLESS'] = 'false'
-        # Utiliser xvfb-run pour simuler un affichage sur le VPS
+        xvfb = shutil.which('xvfb-run')
+        cmd = ['node', script_path] if not xvfb else [xvfb, '-a', 'node', script_path]
         result = subprocess.run(
-            ['xvfb-run', '-a', 'node', script_path],
+            cmd,
             capture_output=True,
             text=True,
             check=True,
