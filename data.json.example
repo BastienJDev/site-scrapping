@@ -1,0 +1,21 @@
+{
+  "categories": [
+    {
+      "id": 1,
+      "name": "Exemple",
+      "color": "#6366f1"
+    }
+  ],
+  "sites": [
+    {
+      "id": 1,
+      "name": "Exemple Site",
+      "url": "https://example.com",
+      "category_id": 1,
+      "description": "Un site d'exemple",
+      "last_scraped": null,
+      "created_at": "2024-01-01T00:00:00"
+    }
+  ],
+  "scraping_results": []
+}

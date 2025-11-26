@@ -266,7 +266,8 @@ def run_dalloz_script():
             text=True,
             check=True,
             timeout=180,
-            env=env
+            env=env,
+            encoding="utf-8"
         )
         return jsonify({
             'success': True,
@@ -276,6 +277,7 @@ def run_dalloz_script():
     except subprocess.TimeoutExpired:
         return jsonify({'success': False, 'error': 'Timeout lors de l’exécution du script'}), 504
     except subprocess.CalledProcessError as e:
+        print(e)
         return jsonify({
             'success': False,
             'error': 'Erreur pendant l’exécution du script',

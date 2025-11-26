@@ -11,8 +11,8 @@ NC='\033[0m' # No Color
 echo -e "${GREEN}=== Démarrage de l'application Site Scrapping ===${NC}"
 
 # Vérifier Python
-if ! command -v python3 &> /dev/null; then
-    echo -e "${RED}Python3 n'est pas installé${NC}"
+if ! command -v python &> /dev/null; then
+    echo -e "${RED}python n'est pas installé${NC}"
     exit 1
 fi
 
@@ -26,7 +26,7 @@ fi
 # Créer un environnement virtuel s'il n'existe pas
 if [ ! -d "venv" ]; then
     echo -e "${YELLOW}Création de l'environnement virtuel...${NC}"
-    python3 -m venv venv
+    python -m venv venv
 fi
 
 # Activer l'environnement virtuel
@@ -54,4 +54,4 @@ fi
 # Démarrer l'application
 echo -e "${GREEN}Démarrage du serveur sur http://127.0.0.1:5001${NC}"
 echo -e "${YELLOW}Appuyez sur Ctrl+C pour arrêter${NC}"
-python3 app.py
+python app.py
