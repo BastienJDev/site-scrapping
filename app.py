@@ -410,7 +410,7 @@ def get_gemini_summary(all_contents, prompt=None):
         if not GEMINI_API_KEY or GEMINI_API_KEY == 'your_api_key_here':
             return None
         
-        model = genai.GenerativeModel('gemini-2.5-flash')
+        model = genai.GenerativeModel('gemini-2.0-flash')
         
         # Construire le prompt humanisé
         if prompt:
