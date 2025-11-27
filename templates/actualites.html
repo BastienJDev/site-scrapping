@@ -52,6 +52,7 @@
                     </div>
                     <div class="nav-dropdown-menu">
                         <button type="button" class="nav-subitem" data-dalloz-trigger>Dalloz</button>
+                        <button type="button" class="nav-subitem" data-lexis360-trigger>Lexis360</button>
                     </div>
                 </div>
                 
@@ -721,7 +722,30 @@
             });
         }
         
+        function setupLexis360Trigger() {
+            document.querySelectorAll('[data-lexis360-trigger]').forEach(btn => {
+                if (btn.dataset.bound === 'true') return;
+                btn.dataset.bound = 'true';
+                btn.addEventListener('click', async () => {
+                    const original = btn.textContent;
+                    btn.disabled = true;
+                    btn.textContent = 'Lancement...';
+                    try {
+                        const res = await fetch('/run-lexis360-script', { method: 'POST' });
+                        const data = await res.json();
+                        alert(data.success ? (data.message || 'Script lancé') : (data.error || 'Erreur pendant le script'));
+                    } catch (err) {
+                        alert('Erreur de communication avec le script');
+                    } finally {
+                        btn.disabled = false;
+                        btn.textContent = original;
+                    }
+                });
+            });
+        }
+        
         setupDallozTrigger();
+        setupLexis360Trigger();
         loadStats();
     </script>
 </body>

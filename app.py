@@ -408,6 +408,45 @@ def run_dalloz_script():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
+@app.route('/run-lexis360-script', methods=['POST'])
+@login_required
+def run_lexis360_script():
+    script_path = os.path.join(os.path.dirname(__file__), 'scripts', 'custom', 'custom_lexis360.js')
+    
+    if not os.path.exists(script_path):
+        return jsonify({'success': False, 'error': 'Script Lexis360 introuvable'}), 404
+    
+    try:
+        env = os.environ.copy()
+        env['HEADLESS'] = 'false' if shutil.which('xvfb-run') else 'true'
+        xvfb = shutil.which('xvfb-run')
+        cmd = ['node', script_path] if not xvfb else [xvfb, '-a', 'node', script_path]
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            check=True,
+            timeout=180,
+            env=env,
+            encoding="utf-8"
+        )
+        return jsonify({
+            'success': True,
+            'message': 'Script Lexis360 exécuté',
+            'output': result.stdout.strip()
+        })
+    except subprocess.TimeoutExpired:
+        return jsonify({'success': False, 'error': 'Timeout lors de l'exécution du script'}), 504
+    except subprocess.CalledProcessError as e:
+        print(e)
+        return jsonify({
+            'success': False,
+            'error': 'Erreur pendant l'exécution du script',
+            'details': e.stderr
+        }), 500
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 # ===== CATEGORIES =====
 
 @app.route('/api/categories', methods=['GET'])
