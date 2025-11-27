@@ -42,6 +42,10 @@ app.config['UPLOAD_FOLDER'] = 'uploads'
 PDF_FOLDER = os.path.join(app.config['UPLOAD_FOLDER'], 'pdfs')
 os.makedirs(PDF_FOLDER, exist_ok=True)
 
+# Dossier pour les scripts Playwright personnalisés
+PLAYWRIGHT_SCRIPTS_FOLDER = os.path.join('scripts', 'custom')
+os.makedirs(PLAYWRIGHT_SCRIPTS_FOLDER, exist_ok=True)
+
 # Configuration Gemini
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
 
@@ -66,6 +70,7 @@ os.makedirs(PDF_FOLDER, exist_ok=True)
 DATA_FILE = 'data.json'
 ALLOWED_EXTENSIONS = {'xlsx', 'xls', 'csv', 'pdf'}
 PDF_PROMPTS_FILE = 'pdf_prompts.json'
+PLAYWRIGHT_SCRIPTS_FILE = 'playwright_scripts.json'
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -78,6 +83,16 @@ def load_pdf_prompts():
 
 def save_pdf_prompts(data):
     with open(PDF_PROMPTS_FILE, 'w', encoding='utf-8') as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
+
+def load_playwright_scripts():
+    if not os.path.exists(PLAYWRIGHT_SCRIPTS_FILE):
+        return {}
+    with open(PLAYWRIGHT_SCRIPTS_FILE, 'r', encoding='utf-8') as f:
+        return json.load(f)
+
+def save_playwright_scripts(data):
+    with open(PLAYWRIGHT_SCRIPTS_FILE, 'w', encoding='utf-8') as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
 
 # Fonctions de gestion du fichier JSON
@@ -245,6 +260,113 @@ def update_pdf_prompt(filename):
     prompts[filename] = prompt
     save_pdf_prompts(prompts)
     return jsonify({'success': True, 'prompt': prompt})
+
+@app.route('/api/sites/<int:site_id>/playwright-script', methods=['GET', 'POST'])
+@login_required
+def manage_playwright_script(site_id):
+    data = load_data()
+    site = next((s for s in data['sites'] if s['id'] == site_id), None)
+    
+    if not site:
+        return jsonify({'success': False, 'error': 'Site not found'}), 404
+    
+    scripts_data = load_playwright_scripts()
+    site_key = str(site_id)
+    
+    if request.method == 'POST':
+        req_data = request.get_json() or {}
+        script_content = req_data.get('script', '')
+        
+        if not script_content:
+            return jsonify({'success': False, 'error': 'Script content is required'}), 400
+        
+        # Sauvegarder le script
+        scripts_data[site_key] = {
+            'site_id': site_id,
+            'site_name': site['name'],
+            'script': script_content,
+            'updated_at': datetime.now().isoformat()
+        }
+        save_playwright_scripts(scripts_data)
+        
+        return jsonify({
+            'success': True,
+            'message': 'Script saved successfully'
+        })
+    
+    # GET - Récupérer le script existant
+    script_info = scripts_data.get(site_key, {
+        'site_id': site_id,
+        'site_name': site['name'],
+        'script': '',
+        'updated_at': None
+    })
+    
+    return jsonify({
+        'success': True,
+        'script': script_info
+    })
+
+@app.route('/api/sites/<int:site_id>/run-playwright', methods=['POST'])
+@login_required
+def run_playwright_script(site_id):
+    data = load_data()
+    site = next((s for s in data['sites'] if s['id'] == site_id), None)
+    
+    if not site:
+        return jsonify({'success': False, 'error': 'Site not found'}), 404
+    
+    scripts_data = load_playwright_scripts()
+    site_key = str(site_id)
+    
+    if site_key not in scripts_data or not scripts_data[site_key].get('script'):
+        return jsonify({'success': False, 'error': 'No Playwright script configured for this site'}), 400
+    
+    # Créer le fichier de script temporaire
+    script_filename = f'custom_site_{site_id}.js'
+    script_path = os.path.join(PLAYWRIGHT_SCRIPTS_FOLDER, script_filename)
+    
+    try:
+        # Écrire le script dans un fichier
+        with open(script_path, 'w', encoding='utf-8') as f:
+            f.write(scripts_data[site_key]['script'])
+        
+        # Exécuter le script
+        env = os.environ.copy()
+        env['HEADLESS'] = 'false' if shutil.which('xvfb-run') else 'true'
+        xvfb = shutil.which('xvfb-run')
+        cmd = ['node', script_path] if not xvfb else [xvfb, '-a', 'node', script_path]
+        
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            check=True,
+            timeout=180,
+            env=env,
+            encoding="utf-8"
+        )
+        
+        # Mettre à jour la date de dernier scraping
+        site['last_scraped'] = datetime.now().isoformat()
+        save_data(data)
+        
+        return jsonify({
+            'success': True,
+            'message': f'Playwright script executed for {site["name"]}',
+            'output': result.stdout.strip()
+        })
+    
+    except subprocess.TimeoutExpired:
+        return jsonify({'success': False, 'error': 'Script timeout (180s)'}), 504
+    except subprocess.CalledProcessError as e:
+        return jsonify({
+            'success': False,
+            'error': 'Script execution failed',
+            'details': e.stderr
+        }), 500
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/run-dalloz-script', methods=['POST'])
 @login_required

@@ -184,6 +184,31 @@
             </form>
         </div>
     </div>
+
+    <!-- Modal Playwright Script -->
+    <div id="playwrightModal" class="modal">
+        <div class="modal-content" style="max-width: 900px;">
+            <h2>🎭 Script Playwright - <span id="playwrightSiteName"></span></h2>
+            <input type="hidden" id="playwrightSiteId">
+            
+            <div class="form-group">
+                <label>Script Playwright (JavaScript)</label>
+                <textarea id="playwrightScriptArea" rows="20" style="font-family: 'Courier New', monospace; font-size: 12px;"></textarea>
+                <small style="color: #666; display: block; margin-top: 5px;">
+                    💡 Utilisez Playwright pour automatiser la navigation sur le site. 
+                    Le script doit être du JavaScript valide avec require('playwright').
+                </small>
+            </div>
+            
+            <div class="form-actions">
+                <button type="button" class="btn-secondary" onclick="closePlaywrightModal()">Fermer</button>
+                <button type="button" class="btn-primary" onclick="savePlaywrightScript()">💾 Sauvegarder</button>
+                <button type="button" class="btn-primary" onclick="runPlaywrightScript()">▶️ Exécuter</button>
+            </div>
+            
+            <div id="playwrightOutput" style="margin-top: 20px;"></div>
+        </div>
+    </div>
     
     <script src="{{ url_for('static', filename='sites.js') }}"></script>
 </body>

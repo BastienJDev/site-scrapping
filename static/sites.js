@@ -50,6 +50,9 @@ async function loadSites(categoryId = null) {
                 <button class="btn-icon" onclick="scrapeSite(${site.id}, '${site.url}')" title="Scrapper">
                     🔍
                 </button>
+                <button class="btn-icon" onclick="openPlaywrightModal(${site.id}, '${site.name.replace(/'/g, "\\'")}')" title="Script Playwright">
+                    🎭
+                </button>
                 <button class="btn-icon" onclick="editSite(${site.id})" title="Modifier">
                     ✏️
                 </button>
@@ -253,6 +256,120 @@ document.getElementById('importForm').addEventListener('submit', async (e) => {
         submitBtn.textContent = 'Importer';
     }
 });
+
+// Gestion des scripts Playwright personnalisés
+async function openPlaywrightModal(siteId, siteName) {
+    document.getElementById('playwrightSiteId').value = siteId;
+    document.getElementById('playwrightSiteName').textContent = siteName;
+    document.getElementById('playwrightScriptArea').value = '';
+    document.getElementById('playwrightOutput').innerHTML = '';
+    
+    try {
+        const response = await fetch(`/api/sites/${siteId}/playwright-script`);
+        const data = await response.json();
+        
+        if (data.success && data.script.script) {
+            document.getElementById('playwrightScriptArea').value = data.script.script;
+        } else {
+            // Template par défaut
+            document.getElementById('playwrightScriptArea').value = `const { chromium } = require('playwright');
+
+(async () => {
+  const browser = await chromium.launch({
+    headless: false
+  });
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  
+  // Votre code ici
+  await page.goto('URL_DU_SITE');
+  
+  // Exemple: remplir un formulaire
+  // await page.fill('#username', 'votre_user');
+  // await page.fill('#password', 'votre_pass');
+  // await page.click('button[type="submit"]');
+  
+  // Attendre un peu
+  await page.waitForTimeout(5000);
+  
+  console.log('Script terminé');
+  await browser.close();
+})();`;
+        }
+    } catch (error) {
+        console.error('Erreur lors du chargement du script:', error);
+    }
+    
+    document.getElementById('playwrightModal').style.display = 'block';
+}
+
+function closePlaywrightModal() {
+    document.getElementById('playwrightModal').style.display = 'none';
+}
+
+async function savePlaywrightScript() {
+    const siteId = document.getElementById('playwrightSiteId').value;
+    const script = document.getElementById('playwrightScriptArea').value;
+    
+    if (!script.trim()) {
+        alert('Le script ne peut pas être vide');
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/api/sites/${siteId}/playwright-script`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ script })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            alert('✅ Script sauvegardé avec succès');
+        } else {
+            alert('❌ Erreur: ' + data.error);
+        }
+    } catch (error) {
+        alert('❌ Erreur de communication: ' + error.message);
+    }
+}
+
+async function runPlaywrightScript() {
+    const siteId = document.getElementById('playwrightSiteId').value;
+    const outputDiv = document.getElementById('playwrightOutput');
+    const runBtn = document.querySelector('#playwrightModal button[onclick="runPlaywrightScript()"]');
+    
+    runBtn.disabled = true;
+    runBtn.textContent = 'Exécution...';
+    outputDiv.innerHTML = '<p style="color: blue;">⏳ Exécution du script en cours...</p>';
+    
+    try {
+        const response = await fetch(`/api/sites/${siteId}/run-playwright`, {
+            method: 'POST'
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            outputDiv.innerHTML = `
+                <p style="color: green;">✅ ${data.message}</p>
+                ${data.output ? `<pre style="background: #f5f5f5; padding: 10px; border-radius: 4px;">${data.output}</pre>` : ''}
+            `;
+            loadSites(); // Rafraîchir la liste
+        } else {
+            outputDiv.innerHTML = `
+                <p style="color: red;">❌ Erreur: ${data.error}</p>
+                ${data.details ? `<pre style="background: #ffe6e6; padding: 10px; border-radius: 4px;">${data.details}</pre>` : ''}
+            `;
+        }
+    } catch (error) {
+        outputDiv.innerHTML = `<p style="color: red;">❌ Erreur: ${error.message}</p>`;
+    } finally {
+        runBtn.disabled = false;
+        runBtn.textContent = '▶️ Exécuter';
+    }
+}
 
 function setupDallozTrigger() {
     document.querySelectorAll('[data-dalloz-trigger]').forEach(btn => {
